@@ -11,7 +11,7 @@ export default {
   server: {
     proxy: {
       '/api': {
-        target: 'https://dalle-arbb.onrender.com',
+        target: 'https://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

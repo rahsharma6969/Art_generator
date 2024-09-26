@@ -1,26 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormField } from '../components';
+import { useUserContext } from '../components/Usercontext/'; // Correct import
 
 const CreatePost = () => {
   const navigate = useNavigate();
+  const { user } = useUserContext(); // Fetch user from context
+
   const [form, setForm] = useState({
     name: '',
     prompt: '',
-    uploadedPhoto: null, // Stores the File object or URL
+    uploadedPhoto: null,
   });
   const [generatingImg, setGeneratingImg] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Handle text input changes
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleFileChange = (e) => setForm({ ...form, uploadedPhoto: e.target.files[0] });
 
-  // Handle file input changes
-  const handleFileChange = (e) => {
-    setForm({ ...form, uploadedPhoto: e.target.files[0] }); // Store the File object
-  };
-
-  // Function to generate image via DALL-E API
   const generateImage = async () => {
     if (!form.prompt) {
       alert('Please provide a prompt');
@@ -31,9 +28,7 @@ const CreatePost = () => {
       setGeneratingImg(true);
       const response = await fetch('http://localhost:8080/api/v1/dalle', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: form.prompt }),
       });
 
@@ -44,7 +39,7 @@ const CreatePost = () => {
       const data = await response.json();
       const blob = await fetch(`data:image/jpeg;base64,${data.photo}`).then((res) => res.blob());
       const file = new File([blob], 'generated-image.jpg', { type: 'image/jpeg' });
-      setForm((prev) => ({ ...prev, uploadedPhoto: file })); // Save as File object
+      setForm((prev) => ({ ...prev, uploadedPhoto: file }));
     } catch (err) {
       alert(err.message);
     } finally {
@@ -52,7 +47,6 @@ const CreatePost = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -69,11 +63,14 @@ const CreatePost = () => {
       return;
     }
 
+    const userId = user.id; // Directly access user ID
+
     try {
       const formData = new FormData();
+      formData.append('userId', userId);
       formData.append('name', form.name);
       formData.append('prompt', form.prompt);
-      formData.append('photo', form.uploadedPhoto); // Append the file or generated image
+      formData.append('photo', form.uploadedPhoto);
 
       // Debugging FormData content
       for (let [key, value] of formData.entries()) {
@@ -82,7 +79,7 @@ const CreatePost = () => {
 
       const response = await fetch('http://localhost:8080/api/v1/community/posts/create', {
         method: 'POST',
-        body: formData, // Send FormData with file
+        body: formData,
       });
 
       if (response.ok) {
